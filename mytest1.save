@@ -1,0 +1,12 @@
+[ div-mod.imp 
+  1 0
+  1 0 0 0
+]
+DECLARE
+	a;
+IN
+	REA
+	WRITE 765;
+	WRITE c;
+END
+

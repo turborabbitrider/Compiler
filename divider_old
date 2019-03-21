@@ -1,0 +1,54 @@
+reset("C");
+	reset("D");
+	put("A");
+	put("B");			///////
+	jump(k + 10);		///////
+	copy("C","B");
+	sub("C","A");
+	jump(k + 4);
+	reset("A");
+	inc("A");
+	jump(k + 44);
+	jzero("C", k - 3);
+	reset("A");				///////
+	jump(k + 41);		///////
+	copy("C","A");
+	sub("C","B");
+	jzero("C", k - 11);	///////
+	copy("C","A");				///////
+	sub("C","B");
+	copy("D","C");
+	jzero("C", k + 33);
+	copy("C","B");
+	inc("D");
+	reset("E");
+	inc("E");
+	jzero("E",k + 6);
+	add("C","C");
+	add("D","D");
+	copy("E","A");
+	sub("E","C");
+	jump(k - 5);
+	half("C");
+	half("D");			///////
+	copy("B","C");
+	copy("E","D");
+	reset("F");
+	inc("F");
+	jzero("F", k + 11);	///////
+	jump(k + 3);	
+	sub("C","B");
+	sub("D","E");		///////
+	half("B");
+	jzero("B", k + 11);
+	half("E");
+	add("C","B");
+	add("D","E");
+	copy("F","A");
+	sub("F", "C");
+	jump(k - 10);
+	copy("F","C");
+	sub("F","A");
+	jzero("F",k + 2);
+	jump(k - 12);
+	copy("A","D");

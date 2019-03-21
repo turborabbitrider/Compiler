@@ -1,0 +1,61 @@
+reset("A");
+	reset("B");
+	long long int ai = sanitize_val(as, variables, tables, "A");
+	long long int bi = sanitize_val(bs, variables, tables, "B");
+	if(ai == -1){
+		if(is_reg(as))	
+			copy("A", as);
+		else
+			printf("Blad: Niepoprawna wartość do dzielenia");
+	}else{ 
+		setup_val("A", ai);
+	}
+	if(bi == -1){
+		if(is_reg(bs))	
+			copy("B", bs);
+		else
+			printf("Blad: Niepoprawna wartość do dzielenia");
+	}else{ 
+		setup_val("B", bi);
+	}
+	reset("C");
+	reset("D");
+	copy("C","A");
+	sub("C","B");
+	jzero("C", k + 33);
+	copy("C","B");
+	inc("D");
+	reset("E");
+	inc("E");
+	jzero("E",k + 6);
+	add("C","C");
+	add("D","D");
+	copy("E","A");
+	sub("E","C");
+	jump(k - 5);
+	half("C");
+	half("D");
+
+	copy("B","C");
+	copy("E","D");
+	reset("F");
+	inc("F");
+	jzero("F", k + 12);
+
+	jump(k + 3);	
+	sub("C","B");
+	sub("D","E");
+
+	half("B");
+	jzero("B", k + 11);
+	half("E");
+	add("C","B");
+	add("D","E");
+	copy("F","A");
+	sub("F", "C");
+	jump(k - 11);
+	copy("F","C");
+	sub("F","A");
+	jzero("F",k + 2);
+	jump(k - 13);
+	sub("A","C");

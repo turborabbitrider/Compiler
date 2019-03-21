@@ -1,0 +1,5 @@
+DECLARE 
+z;
+IN
+z:=55;
+END

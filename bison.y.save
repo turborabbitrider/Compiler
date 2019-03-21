@@ -1,0 +1,126 @@
+%{
+	#define YYSTYPE std::string
+	#include <stdio.h>
+	#include <iostream>
+	#include <stack>
+	#include <vector>
+
+	using namespace std;
+
+	struct var{
+		string name;
+		long long int value;
+	};
+	
+	void yyerror(const char *);
+	int yylex();
+	extern int yylineno;
+
+	void finish();
+	int find_var(string, vector<var>);
+
+	long long int k = 0;
+	vector<string> commands;
+	vector<var> variables;
+	vector<vector<var>> tables;
+%}
+
+%token DECLARE IN END
+%token IF THEN ELSE ENDIF
+%token WHILE DO ENDWHILE ENDDO
+%token FOR FROM TO DOWNTO ENDFOR
+%token READ WRITE
+%token SC
+%token PLUS MINUS MULTI DIV MOD
+%token EQ NEQ LES BIG LESEQ BIGEQ 
+%token ASSIGN
+%token OPEN CLOSE RANGE
+%token NUM PIDENTIFIER
+%%
+
+program			:	DECLARE declarations IN commands END {finish(); printf("HALT\n");}
+				;
+
+declarations 	:	declarations PIDENTIFIER SC{
+							if(find_var($2, variables) == -1){
+								var v;
+								v.name = $2;
+								v.value = 0;
+								variables.push_back(v);
+							}else {
+								cout << "Blad: Powtorna deklaracja zmiennej: " << $2 << endl;
+								return 0;
+							}
+						}
+				|	declarations PIDENTIFIER OPEN NUM RANGE NUM CLOSE SC{
+						
+}
+				|	//
+				;
+
+commands		: 	commands command
+				|	command
+				;
+
+command 		:	identifier ASSIGN expression SC{}
+				|	IF condition THEN commands ELSE commands ENDIF
+				|	IF condition THEN commands ENDIF
+				|	WHILE condition DO commands ENDWHILE
+				|	DO commands WHILE condition ENDDO
+				|	FOR PIDENTIFIER FROM value TO value DO commands ENDFOR
+				|	FOR PIDENTIFIER FROM value DOWNTO value DO commands ENDFOR
+				|	READ identifier SC
+				|	WRITE value SC
+				;
+
+expression 		:	value
+				|	value PLUS value
+				|	value MINUS value
+				|	value MULTI value
+				|	value DIV value
+				|	value MOD value
+				;
+
+condition		:	value EQ value
+				|	value NEQ value
+				|	value LES value
+				|	value BIG value
+				|	value LESEQ value
+				|	value BIGEQ value
+				;
+
+value			:	NUM
+				|	identifier
+				;
+
+identifier 		:	PIDENTIFIER
+				|	PIDENTIFIER OPEN PIDENTIFIER CLOSE
+				|	PIDENTIFIER OPEN NUM CLOSE
+				;
+%%
+
+void finish(){
+	for(int i = 0; i < commands.size(); i++){
+		cout << commands[i] << endl;
+	}
+}
+
+int find_var(string name, vector<var> var_set){
+	int s = var_set.size();
+	for(int i = 0; i < s; i++){
+		if(var_set[i].name == name)
+			return i;
+	}
+	return -1;
+}
+
+void yyerror(char const *s){
+	printf("Błąd: %s", s);
+}
+
+int main()
+{
+	yyparse();
+	printf("Przetworzono linii: %d\n",yylineno-1);
+	return 0;
+}
