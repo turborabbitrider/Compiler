@@ -83,8 +83,9 @@ WRITE 		{if(!comment) return WRITE; 	}
 "<="		{if(!comment) return LESEQ;		}
 ">="		{if(!comment) return BIGEQ;		}
 ":="		{if(!comment) return ASSIGN;	}
-"."		{}
-"?"		{}
+"."		{if(!comment) printf("Niepoprawny znak \".\"");}
+"?"		{if(!comment) printf("Niepoprawny znak \"?\"");}
+"^"		{if(!comment) printf("Niepoprawny znak \"^\"");}
 
 [_a-z]+ 	{
 	yylval = (yytext);

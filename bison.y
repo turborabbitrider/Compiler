@@ -98,7 +98,9 @@
 	vector<long long int> while_middlers;
 	vector<long long int> while_enders;
 	vector<long long int> for_markers;
+	vector<long long int> for_enders;
 	int if_counter = -1;
+	long long int for_counter;
 %}
 
 //%error-verbose
@@ -116,8 +118,10 @@
 %%
 
 program			:	DECLARE declarations IN commands END {//cout <<"ggggg";
+halt();
 finish(); 
-printf("HALT\n");}
+//printf("HALT\n");
+}
 				;
 
 declarations 	:	declarations PIDENTIFIER SC{ //cout << "zxvc";
@@ -170,8 +174,10 @@ command 		:	identifier ASSIGN expression SC
 						}else
 							if(read_var_check != 0){
 								load_var_to_reg($3, "F");
+								//put("F");
 								tab_write($1, "F");
 								read_var_check = 0;
+								//cout << $3 << endl;
 								//cout << num << "   " << $3;
 								//cout << to_string(num);
 								//setup_val("H", get_num($3));
@@ -187,6 +193,7 @@ command 		:	identifier ASSIGN expression SC
 							}
 					}
 				}else{
+					//cout << count_check << "    " << $3 << "    " << read_var_check << "    ";
 					if(count_check != 0){
 						//cout << last_count_reg;
 						//put(last_count_reg);
@@ -196,16 +203,19 @@ command 		:	identifier ASSIGN expression SC
 						//cout << "num";
 						if(read_var_check != 0){
 							load_var_to_reg($3, last_reg);
+							
 							var_write($1, last_reg);
 							read_var_check = 0;
-							//cout << num << "   " << $3;
+							//cout << endl << endl << $3;
 							//cout << to_string(num);
 							//setup_val("H", get_num($3));
-							//put("H");
+							//put(last_reg);
 						}else if(get_num($3) != -1){
+							//cout << $3 << "    " << get_num($3) << endl;
 							//setup_val("H", get_num($3));
 							//put("H");
 							var_write($1, $3);
+							
 						}
 						else{
 							printf("Blad: niepoprawna zmienna do przypisania: %s\n", $3.c_str());
@@ -213,13 +223,13 @@ command 		:	identifier ASSIGN expression SC
 						}
 					}
 				}
+			//put("A");
 }
 				|	IF condition {
 	if_beginers.push_back(k);
 	k++;
 	if_counter++;
 	//cout << k;
-	//put("B");
 	//put("B");
 	//put("B");
 }
@@ -230,15 +240,16 @@ command 		:	identifier ASSIGN expression SC
 }
 				|	{while_beginers.push_back(k);
 						//put("B");
-					} WHILE condition {while_middlers.push_back(k);} DO commands ENDWHILE{
+					} WHILE condition { while_middlers.push_back(k); k++; for_counter++;} DO commands ENDWHILE{
 	jump(while_beginers[while_beginers.size() - 1]);
 	vector<string>::iterator pos = commands.begin();
 	stringstream ss;
-	ss << "JZERO B " << k + 1;		//chyba +1
+	ss << "JZERO B " << k;		//chyba +1
 	string ss_to_s = ss.str();
-	commands.insert(pos + while_middlers[while_middlers.size() - 1] + 1, ss_to_s); 
+	commands.insert(pos + while_middlers[while_middlers.size() - 1] + 1 - for_counter, ss_to_s); 
 	while_beginers.pop_back();
 	while_middlers.pop_back();
+	for_counter--;
 }
 				|	DO {while_beginers.push_back(k);
 						//put("B");
@@ -248,6 +259,116 @@ command 		:	identifier ASSIGN expression SC
 	while_beginers.pop_back();
 }
 				|	FOR PIDENTIFIER FROM value {
+	//cout << get_num($4);
+	//put("A");
+	//put("A");
+	//put("A");
+	//cout << find_tab($2, tables) << endl << find_var($2, variables);
+	if(find_tab($2, tables) == -1 && find_var($2, variables) == -1){
+		var v;
+		v.name = $2;
+
+///////XXX////////////sprawdzanie czy jest już taka zmienna XXX XXX XXX
+
+		v.value = 0;
+		//cout << variables.size();
+		variables.push_back(v);
+		//cout << variables.size();
+
+		if(get_num($4) != -1){
+			var_write($2, $4);
+		}else if(read_var_check != 0){
+			load_var_to_reg($4, last_reg);
+			//cout << $4;
+			//put(last_reg);
+			var_write($2, last_reg);
+			read_var_check = 0;
+		}
+		else{
+			printf("Blad: niepoprawna zmienna do przypisania: %s\n", $4.c_str());
+		}
+
+	}else{
+		cout << "Blad: powtorna deklaracja zmiennej " << $2;
+	}				//koniec tworzenia zmiennej	
+
+	//get_val_mem($2, "F");
+	//put("F");
+
+	
+
+} TO value {
+	var v;
+	stringstream ss;
+	for_counter++;
+	ss << "for_var" << for_counter;
+	v.name = ss.str();
+	v.value = 0;
+	variables.push_back(v);
+
+	if(read_var_check != 0){
+		load_var_to_reg($7, last_reg);
+		var_write(v.name, last_reg);
+		read_var_check = 0;
+	}else if(get_num($7) != -1){
+		var_write(v.name, $7);
+	}
+	else{
+		printf("Blad: niepoprawna zmienna do ograniczenia petli: %s\n", $7.c_str());
+	}	
+}
+ DO {for_markers.push_back(k); k++;} commands ENDFOR{
+
+	//cout << $2;
+
+	get_val_mem($2, "G");
+	//put("G");
+	//put("G");
+	//put("G");
+	inc("G");
+	//put("G");
+	var_write($2, "G");//i++
+	//get_val_mem($2, "G");
+	//put("G");
+
+	vector<string>::iterator pos = commands.begin();
+	stringstream ss;
+	ss << "JUMP " << k;		//mozliwe ze bez +1
+	string ss_to_s = ss.str();
+	commands.insert(pos + for_markers[for_markers.size() - 1] + 1 - for_counter, ss_to_s);
+	
+
+	next_load_reg();						//condition
+	get_val_mem($2, "G");
+	//put("G");
+	stringstream sss;
+	sss << "for_var" << for_counter;
+	get_val_mem(sss.str(), "H");
+	//put("H");
+	
+	//cout << $7 << "    " << get_num($7) << endl;
+	//if(get_num($7) == -1)   
+	is_lesseq("G", "H");
+	//else{
+	//	is_lesseq("G", sss.str());	//condition
+		//cout << sss.str();
+	//}
+	//put("B");
+	//get("B");
+	jzero("B", k + 2);		
+	jump(for_markers[for_markers.size() - 1] + 1);
+	for_markers.pop_back();
+	for_counter--;
+	
+	variables.pop_back();
+	variables.pop_back();
+	//put("A");
+	
+	//zamienic kolejnosc w pamieci tablicowych ze zwyklymi bo zapisanie forowej zmiennej moze nadpisac zmienna tablicowa(przekroczenie poprzedniego rozmiaru wektora) [fixed]
+
+}
+				|	FOR PIDENTIFIER FROM value {
+	//cout << get_num($4);
 	//put("A");
 	//put("A");
 	//put("A");
@@ -262,10 +383,11 @@ command 		:	identifier ASSIGN expression SC
 
 		if(read_var_check != 0){
 			load_var_to_reg($4, last_reg);
+			//put(last_reg);
 			var_write($2, last_reg);
 			read_var_check = 0;
 		}else if(get_num($4) != -1){
-			var_write($1, $3);
+			var_write($2, $4);
 		}
 		else{
 			printf("Blad: niepoprawna zmienna do przypisania: %s\n", $4.c_str());
@@ -273,59 +395,113 @@ command 		:	identifier ASSIGN expression SC
 
 	}else{
 		cout << "Blad: powtorna deklaracja zmiennej " << $2;
-	}				//koniec tworzenia zmiennej		
+	}				//koniec tworzenia zmiennej	
+
+	//get_val_mem($2, "F");
+	//put("F");
 
 	
 
-} TO value DO {for_markers.push_back(k);} commands ENDFOR{
+} DOWNTO value {
+	var v;
+	stringstream ss;
+	for_counter++;
+	ss << "for_var" << for_counter;
+	v.name = ss.str();
+	v.value = 0;
+	variables.push_back(v);
+	//cout << read_var_check;
+	if(read_var_check != 0){
+		load_var_to_reg(v.name, last_reg);
+		//put("A");
+		//put(last_reg);
+		//put(last_reg);
+		var_write(v.name, last_reg);
+		read_var_check = 0;
+	}else if(get_num($7) != -1){
+		var_write(v.name, $7);
+	}
+	else{
+		printf("Blad: niepoprawna zmienna do ograniczenia petli: %s\n", $7.c_str());
+	}	
+	//put(last_reg);
+}
+ DO {for_markers.push_back(k); k++;} commands ENDFOR{
 
 	//get_val_mem($7, "E");
 	//put("E");
-	
 
-	get_val_mem($2, "D");
-	inc("D");
-	var_write($2, "D");//i++
+	get_val_mem($2, "G");	
+	for_enders.push_back(k);
+	k++;
+
+	dec("G");
+	var_write($2, "G");
+	
 
 	vector<string>::iterator pos = commands.begin();
 	stringstream ss;
 	ss << "JUMP " << k;		//mozliwe ze bez +1
 	string ss_to_s = ss.str();
-	commands.insert(pos + for_markers[for_markers.size() - 1] + 1, ss_to_s);
-	for_markers.pop_back();
+	commands.insert(pos + for_markers[for_markers.size() - 1] + 1 - for_counter, ss_to_s);
+	
 
+	//put("B");
+	//put("B"); 288 + 16 + 2
+	//put("B");
 	next_load_reg();						//condition
-	get_val_mem($2, "D");
+	get_val_mem($2, "G");
 	//cout << $2;
-	put("A");
-	put("D");
-	get_val_mem($7, "E");
-	put("A");
-	load("E");
-	put("E");
+	//put("A");
+	//put("G");
+	//put("F");
+	stringstream sss;
+	sss << "for_var" << for_counter;
+	get_val_mem(sss.str(), "H");
+	//put("A");
+	//load("E");
+	//put("E");
+	//put("E");
+	//put("H");
 	//next_load_reg();
 	//cout << $7;
-	if(get_num($7) == -1)   
-		is_lesseq("D", last_reg);
-	else
-		is_lesseq("D", $7);	//condition
-
-	put("B");
-	halt();
-	jzero("B", k + 2);
+	//if(get_num($7) == -1)   
+		is_biggeq("G", "H");
+	//else
+	//	is_biggeq("G", sss.str());	//condition
+	
+	//put("B");
+	//get("B");
+	//cout << k;
+	jzero("B", k + 2);		//+5 bo dostosowane do śmieciowych putów
 	jump(for_markers[for_markers.size() - 1] + 1);
 
-	//zamienic kolejnosc w pamieci tablicowych ze zwyklymi bo zapisanie forowej zmiennej moze nadpisac zmienna tablicowa(przekroczenie poprzedniego rozmiaru wektora)
+	vector<string>::iterator posx = commands.begin();
+	stringstream ssx;
+	ssx << "JZERO G " << k;		//mozliwe ze bez +1
+	string ssx_to_s = ssx.str();
+	//cout << for_counter;
+
+	commands.insert(pos + for_enders[for_enders.size() - 1], ssx_to_s);
+
+	for_enders.pop_back();
+	for_markers.pop_back();
+	for_counter--;
+	
+	variables.pop_back();
+	variables.pop_back();
+	//put("A");
+	
+	//zamienic kolejnosc w pamieci tablicowych ze zwyklymi bo zapisanie forowej zmiennej moze nadpisac zmienna tablicowa(przekroczenie poprzedniego rozmiaru wektora) [fixed]
 
 }
-				|	FOR PIDENTIFIER FROM value DOWNTO value DO commands ENDFOR
 				|	READ identifier SC{
 	if(read_in($2, tables, variables) != 0)
 		cout << "Niepoprawna zmienna" << $2;
 }
 				|	WRITE value SC{
-	//cout << $2;
-	//cout << find_var($2, variables);
+	//cout << $2 << "    ";
+	//cout << calc_addr($2);
 	if(find_var($2, variables) != -1 || find_tab(get_tab_name($2), tables) != -1){
 		load_var_to_reg($2,"F");
 		put("F");
@@ -342,21 +518,22 @@ command 		:	identifier ASSIGN expression SC
 		printf("Blad: niepoprawna zmienna do wydrukowania: %s\n", $2.c_str());
 		return 0;
 	}
+	//halt();
 	read_var_check = 0;
 }
 				;
 
-ifcommands		: commands {if_enders.push_back(k);} ELSE commands ENDIF{
+ifcommands		: commands {if_enders.push_back(k); k++;} ELSE commands ENDIF{
 	vector<string>::iterator pos = commands.begin();
 	long long int jump = if_enders[if_beginers.size() - 1] + 1;
 	stringstream ss;
-	ss << "JZERO B " << to_string(if_enders[if_enders.size() - 1] + 2);
+	ss << "JZERO B " << to_string(if_enders[if_enders.size() - 1] + 1);
 	string ss_to_s = ss.str();
-	commands.insert(pos + if_beginers[if_beginers.size() - 1] + 1, ss_to_s); // + if_counter przy zagnieżdżonych
+	commands.insert(pos + if_beginers[if_beginers.size() - 1] + 1 - for_counter, ss_to_s); // + if_counter przy zagnieżdżonych
 	stringstream ss2;
 	ss2 << "JUMP " << k;
 	string ss_to_s2 = ss2.str();
-	commands.insert(pos + if_enders[if_enders.size() - 1] + 1, ss_to_s2);
+	commands.insert(pos + if_enders[if_enders.size() - 1] - for_counter, ss_to_s2);
 	if_counter--;
 	if_beginers.pop_back();
 	if_enders.pop_back();
@@ -369,7 +546,7 @@ ifcommands		: commands {if_enders.push_back(k);} ELSE commands ENDIF{
 	//cout << if_counter;
 	ss << "JZERO B " << k;
 	string ss_to_s = ss.str();
-	commands.insert(pos + if_beginers[if_beginers.size() - 1] + 1, ss_to_s); // + if_counter przy zagnieżdżonych
+	commands.insert(pos + if_beginers[if_beginers.size() - 1], ss_to_s); // + if_counter przy zagnieżdżonych
 	if_counter--;
 	if_beginers.pop_back();
 	if_enders.pop_back();
@@ -412,8 +589,11 @@ expression 		:	value
 }
 				|	value MULTI value{
 	if(get_num($1) == -1){
-		if(get_num($3) == -1)   
-			multiplier(next_load_reg(), last_reg);
+		if(get_num($3) == -1){
+			//put(next_load_reg());
+			//put(next_load_reg());
+			multiplier(next_load_reg(), last_reg);			
+		}
 		else
 			multiplier(last_reg, $3);
 	}
@@ -455,9 +635,12 @@ expression 		:	value
 	set_last_count_reg();
 }
 				|	value MOD value{
+	//put(last_reg);
+	//put(next_load_reg());
+	//next_load_reg();
 	if(get_num($1) == -1){
 		if(get_num($3) == -1)   
-			modder(last_reg, next_load_reg());
+			modder(next_load_reg(), last_reg);
 		else
 			modder(last_reg, $3);
 	}
@@ -581,10 +764,15 @@ identifier 		:	PIDENTIFIER{//printf("empty");
 	get_val_mem($1, last_reg);
 	//cout << $1 << "\n\n\n\n" << last_reg;
 	//put(last_reg);
+	//put("A");
 	last_loaded = 1;
 }
 				|	PIDENTIFIER OPEN PIDENTIFIER CLOSE{//printf("pid");
 	$$ = $1 + "(" + $3 + ")";
+	if(find_var($3, variables) == -1){
+		cout << "Blad: niezadeklarowana zmienna:" << $3;
+		return 0;
+	}
 	tab_mode = 1;
 	//printf("%s", $$.c_str());
 	stringstream ss;
@@ -623,7 +811,7 @@ void load_var_to_reg(string var, string reg){
 	int addr = calc_addr(var);
 	//cout << var << find_var(var, variables) << " " << addr;
 	//cout << "laod " << var << "->" << reg << "addr" << addr;
-	setup_val("A", addr);
+	//setup_val("A", addr); XXX bo calc ustawia a
 	//put("A");
 	load(reg);
 	//put(reg);
@@ -654,7 +842,7 @@ long long int sanitize_val(string s, vector<var> var_set, vector<tab> tab_set, s
 	else{
 		//put("A");
 		if(calc_addr(s) != -1){
-			setup_val("A", calc_addr(s));
+			//setup_val("A", calc_addr(s)); XXX bo calc ustawia a
 			load(reg);
 			//put("A");
 			//put(reg);
@@ -694,9 +882,10 @@ tab tab_cons(const char* max, const char* min, string n){
 	tab t;
 	t.name = n;
 	long long int size = atoll(max) - atoll(min) + 1;
-	t.table = vector<long long int>(size, 0);
+	t.table = vector<long long int>();//(size, 0);
 	t.min = atoi(min);
 	t.max = atoi(max);
+	//cout << t.name << "  XXX  " << t.min << "  XXX  " << t.max << endl;
 	return t;
 }
 
@@ -947,6 +1136,7 @@ void is_bigg(string a, string b){
 	inc("B");
 	jump(k + 2);
 	sub("B","B");
+	//put("B");
 }
 
 void is_lesseq(string a, string b){
@@ -984,6 +1174,7 @@ void is_lesseq(string a, string b){
 	jump(k + 3);
 	sub("B","B");
 	inc("B");
+	//put("B");
 }
 
 void is_biggeq(string a, string b){
@@ -1019,6 +1210,7 @@ void is_biggeq(string a, string b){
 	jump(k + 3);
 	sub("B","B");
 	inc("B");
+	//put("B");
 }
 
 long long int adder(string a, string b){
@@ -1105,8 +1297,6 @@ void multiplier(string as, string bs){
 	long long int ai = sanitize_val(as, variables, tables, "C");
 	long long int bi = sanitize_val(bs, variables, tables, "B");
 	int aa = 0, bb = 0;
-	//put("A");
-	//put("B");
 	copy("A","C");
 	if(ai == -1){
 		if(is_reg(as))	
@@ -1126,6 +1316,15 @@ void multiplier(string as, string bs){
 		if(bi != 0)
 			setup_val("B", bi);
 	}
+	
+	//put("A");
+	//put("B");
+
+	jump(k + 3);
+	sub("A", "A");
+	jump(k + 44);
+	jzero("A", k - 1);
+	jzero("B", k - 3);
 
 	copy("C", "A");
 	sub("C","B");				//ustawienie wiekszej liczby na A
@@ -1134,11 +1333,13 @@ void multiplier(string as, string bs){
 	copy("A", "B");
 	copy("B", "C");
 	jzero("C", k - 3);	//ustawienie wiekszej liczby na A
-
+	//put("A");
+	//put("B");
 	reset("C");
 	inc("C");
 	copy("D","B");			//dodawańsko
 	sub("D","C");
+	//put("D");
 	jzero("D", k + 5);
 	add("A","A");
 	add("C","C");
@@ -1147,6 +1348,7 @@ void multiplier(string as, string bs){
 	jump(k + 4);				//jeśli B to potega 2
 	copy("D","C");
 	sub("D","B");
+	//put("D");
 	jzero("D", k + 21);
 
 	copy("D","B");			// buduje D - pozostałe A do dodania		[new]	
@@ -1178,6 +1380,7 @@ void multiplier(string as, string bs){
 	jump(k - 13);	//xxx/////////////////////////////////
 	jump(k + 2);
 	add("A","B");
+	//put("A");
 	
 			//wynik A
 	
@@ -1286,6 +1489,7 @@ void divider(string as, string bs){
 void modder(string as, string bs){
 	reset("A");
 	reset("B");
+	//cout << as << "    " << bs;
 	long long int ai = sanitize_val(as, variables, tables, "C");
 	long long int bi = sanitize_val(bs, variables, tables, "B");
 	int aa = 0, bb = 0;
@@ -1313,22 +1517,47 @@ void modder(string as, string bs){
 	reset("C");
 	reset("D");
 	//put("A");
-	//put("B");			///////
-	jzero("A", k + 10);
-	jzero("B", k + 8);
-	jump(k + 9);		///////
+	//put("B");			
+	jzero("A", k + 11);
+	jzero("B", k + 9);
+	jump(k + 10);		
 	copy("C","B");
 	sub("C","A");
-	jump(k + 4);
+	jump(k + 3);
 	reset("A");
-	//inc("A");
-	jump(k + 44);
+	jump(k + 30);			//out
 	jzero("C", k - 2);
-	reset("A");				///////
-	jump(k + 41);		///////
+	jump(k + 2);
+	reset("A");			
+	jump(k + 26);			//out
 	copy("C","A");
 	sub("C","B");
-	jzero("C", k - 10);	///////
+	jzero("C", k - 11);
+	reset("E");
+	inc("E");	
+	copy("C","B");
+	add("C","C");
+	add("E","E");
+	copy("D","A");
+	sub("D","C");
+	jzero("D", k + 10);
+	jump(k - 5);
+	sub("A","C");
+	half("C");
+	half("E");
+	jzero("E", k + 10);		//out
+	copy("D", "A");
+	sub("D", "C");
+	jzero("D", k + 2);		//c >= a
+	jump(k - 7);
+	copy("D", "C");
+	sub("D", "A");
+	jzero("D", k + 2);		//c == a
+	jump(k - 10);
+	reset("A");
+	//put("A");
+
+/*
 	copy("C","A");				///////
 	sub("C","B");
 	reset("D");
@@ -1351,7 +1580,7 @@ void modder(string as, string bs){
 	inc("F");
 	jzero("F", k + 12);	///////
 	jump(k + 3);	
-	sub("C","B");
+	sub("C","B");		// c = a - b
 	sub("D","E");		///////
 	half("E");
 	jzero("E", k + 11);
@@ -1369,6 +1598,7 @@ void modder(string as, string bs){
 	sub("A","C");
 	//put("C");
 	//put("A");
+*/
 			//wynik A
 }
 
@@ -1388,6 +1618,7 @@ void set_last_count_reg(){
 void free_last_count_reg(){
 	last_count_reg = "E";
 	count_check = 0;
+	read_var_check = 0;
 }
 
 int decrypt_reg(string s){
@@ -1410,6 +1641,7 @@ int decrypt_reg(string s){
 }
 
 int setup_val(string reg, long long int val){
+	//put("A");
 	reset(reg);
 	if(val < 0)
 		return -1;
@@ -1451,6 +1683,9 @@ int setup_val(string reg, long long int val){
 			half(reg2);
 		}	
 	}
+	//put("E");
+	//put("E");
+	//put("E");
 	return -1;	
 }
 
@@ -1477,6 +1712,7 @@ string encrypt_reg(int reg){
 int calc_addr(string var){
 	int size = var.size();
 	int num;
+	
 	string name;
 	for(int i = 0; i < size; i++){
 		if(var.substr(i, 1) == "("){
@@ -1484,18 +1720,56 @@ int calc_addr(string var){
 			int j = find_tab(name, tables);
 			if(j != -1){
 				string ss = var.substr(i + 1, size - i - 2);
-				if(get_var_val(ss, variables) >= tables[j].min && get_var_val(ss, variables) <= tables[j].max){
-					int addr = variables.size();
-					for(int k = 0; k < j; k++)
-						addr += tables[k].table.size();
-					addr += get_var_val(ss, variables) - tables[j].min;
+				//cout << var << "    " << ss << "    " << get_var_val(ss, variables) << "    " << tables[j].min << "    " << tables[j].max;
+				//if(get_var_val(ss, variables) >= tables[j].min && get_var_val(ss, variables) <= tables[j].max){
+					int addr = 0;
+					for(int l = 0; l < j; l++){
+						addr += tables[l].max - tables[l].min + 1;
+						//cout << tables[l].max << "   " << tables[l].min << endl;
+					}
+					setup_val("A", j);
+					//put("A");
+					//put("A");
+					//put("A");
+					//addr -= tables[j].min;
+					//put("A");
+					//cout << addr << "    " << var << "    " << j << endl;
+					if(get_num(ss) != -1){
+						addr += get_num(ss);
+						setup_val("A", addr);
+						setup_val("B", tables[j].min);
+						sub("A", "B");
+						//put("A");
+					}
+					else{
+						//cout << ss <<endl;
+						get_val_mem(ss, "B");
+						setup_val("A", addr);
+						//put("A");
+						//put("B");
+						add("A", "B");
+						//put("A");
+						setup_val("B", tables[j].min);
+						sub("A", "B");
+					}
+					
+					//put("A");
+					//cout << var << "   " << get_var_val(ss, variables) - tables[j].min << endl;
 					return addr;
-				}
+				
 			}
 		}		
 	}
 	if(find_var(var, variables) != -1){
-		return find_var(var, variables);
+		int addr = find_var(var, variables);
+		//cout << var << "    " << addr << endl;
+		for(int i = 0; i < tables.size(); i++){
+			addr += tables[i].max - tables[i].min + 1;
+			//cout << tables[i].max << "   " << tables[i].min << endl;
+		}
+		//cout << var << "    " << addr << endl;
+		setup_val("A", addr);
+		return addr;
 	}
 	return -1;
 }
@@ -1503,7 +1777,7 @@ int calc_addr(string var){
 int get_val_from_mem(string var){
 	int addr = calc_addr(var);
 	if(addr != -1){
-		setup_val("A", addr);
+		//setup_val("A", addr); XXX bo calc ustawia a
 		load("B");
 		return 0;
 	}
@@ -1529,7 +1803,7 @@ int read_in(string s, vector<tab> tab_set, vector<var> var_set){
 	int addr = calc_addr(s);
 	if(addr == -1)
 		return -1;
-	setup_val("A", addr);
+	//setup_val("A", addr);
 	get(next_load_reg());
 	store(last_reg);
 	return 0;
@@ -1564,7 +1838,7 @@ void tab_write_old(string tab, string val){
 void tab_write(string tab, string val){
 	//put(val);
 	int addr = calc_addr(tab);
-	setup_val("A", addr);
+	//setup_val("A", addr); XXX bo calc ustawia a
 	
 	if(is_reg(val))
 		store(val);
@@ -1575,8 +1849,8 @@ void tab_write(string tab, string val){
 }
 
 void var_write(string var, string val){
-	int v = find_var(var, variables);
-	setup_val("A", v);
+	int v = calc_addr(var);
+	//setup_val("A", v); XXX bo calc ustawia a
 	
 	//put("A");
 	//cout << "var_write: " << v << "  " << val;
@@ -1622,35 +1896,9 @@ string next_load_reg(){
 }
 
 void get_val_mem(string s, string reg){
-	//put("G");
-	//put("G");
-	//put("H");
-	int size = s.length();
-	string name = "";
-	long long int ind = -1;
-	//cout << s << "    " << reg << "\n";
-	for(int i = 0; i < size; i++)
-		if(s.substr(i, 1) == "("){
-			name = s.substr(0, i);
-			ind = atoll(s.substr(i + 1, size - i - 2).c_str());
-			int addr = variables.size();
-			for(int k = 0; k < find_tab(name, tables); k++)
-				addr += tables[k].table.size();
-			addr += ind - tables[find_tab(name, tables)].min;
-			setup_val("A", addr);
-			load(reg);
-			//put("A");
-			//put("A");
-			//put(reg);
-			//put("G");
-			//put("H");
-			return;
-		}
-	int v = find_var(s, variables);
-	setup_val("A", v);
+	int v = calc_addr(s);
+	//setup_val("A", v); XXX bo calc ustawia a
 	load(reg);
-	//put("A");
-	//put(reg);
 }
 
 void reset(string ind){
